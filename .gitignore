@@ -1,3 +1,9 @@
+*.avi
+nohup.out
+data/
+models/
+wandb/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
