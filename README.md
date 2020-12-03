@@ -7,7 +7,6 @@ conda activate noaa
 pip install -r requirements.txt \ 
   -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/torch1.6/index.html \
   -f https://download.pytorch.org/whl/torch_stable.html
-pip install -e .
 ```
 
 To add the conda env as a Jupyter kernel:
