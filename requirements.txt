@@ -5,3 +5,5 @@ torch_lr_finder==0.2.1
 torch==1.6.0+cu101
 tqdm==4.48.2
 opencv_contrib_python==4.4.0.44
+ipykernel==5.3.4
+torchvision==0.7.0+cu101
