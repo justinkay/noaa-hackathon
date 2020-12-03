@@ -4,8 +4,6 @@ import os
 import glob
 import torch
 
-from iou_tracker.util import load_mot
-
 from hackathon.evaluate import SimpleEvaluator
 
 

@@ -1,0 +1,7 @@
+pandas==1.1.2
+fvcore==0.1.2.post20200910
+detectron2==0.2.1+cu101
+torch_lr_finder==0.2.1
+torch==1.6.0+cu101
+tqdm==4.48.2
+opencv_contrib_python==4.4.0.44
