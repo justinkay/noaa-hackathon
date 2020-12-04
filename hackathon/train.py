@@ -27,7 +27,7 @@ _MODELS = {
 }
 
 
-def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, freeze=False):
+def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, freeze=False, include_empty=False):
     """
     Basic configuration setup for training/validating using Fishnet.ai data.
     
@@ -45,24 +45,6 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     weights_path = weights_path or _MODELS[model]["weights"]
     config_path = configs_dir + _MODELS[model]["config"]
 
-    cfg = get_training_config_basic(config_path, weights_path, data_dir, device, num_gpus, loss, lr, freeze)
-    
-    # name output directory after model name
-    cfg.OUTPUT_DIR = cfg.OUTPUT_DIR + model
-    
-    # run some default setup from Detectron2
-    # note: this eliminates:
-    # cfg.merge_from_list(args.opts)
-    # cfg.freeze()
-    if do_default_setup:
-        default_setup(cfg, {})
-
-    return cfg
-
-def get_training_config_basic(config_path, weights_path, data_dir, device='cuda', num_gpus=8, loss="smooth_l1", lr=None, freeze=False):
-    """
-    Note: does not run default_setup()
-    """
     cfg = get_cfg()
     
     # bs scaling based on num gpus
@@ -114,8 +96,21 @@ def get_training_config_basic(config_path, weights_path, data_dir, device='cuda'
     
     # based on Detectron defaults, which trained COCO for 18 epochs
     # and which decrease by gamma at 12 and 16 epochs when training COCO
-    num_imgs = sum([len(DatasetCatalog.get(train_key)) for train_key in train_datasets])
-    print("num_imgs",num_imgs)
+    num_imgs = 0
+    for train_key in train_datasets:
+        dataset_dicts = DatasetCatalog.get(train_key)
+        num_before = len(dataset_dicts)
+        if include_empty:
+              num_imgs += num_before
+        else:
+            def valid(anns):
+                for ann in anns:
+                    if ann.get("iscrowd", 0) == 0:
+                        return True
+                return False
+            dataset_dicts = [x for x in dataset_dicts if valid(x["annotations"])]
+            num_imgs += len(dataset_dicts)
+    print("Num images",num_imgs)
     epoch_size = int(num_imgs / bs)
     cfg.SOLVER.MAX_ITER = 18*epoch_size
     cfg.SOLVER.STEPS = (12*epoch_size, 16*epoch_size)
@@ -126,9 +121,18 @@ def get_training_config_basic(config_path, weights_path, data_dir, device='cuda'
     cfg.TEST.EVAL_PERIOD = epoch_size // 20 * 20
     cfg.SOLVER.CHECKPOINT_PERIOD = epoch_size // 20 * 20
     
-    # don't get rid of empty images; I'm not sure why 'True' is the default
-    cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS = False
+    cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS = not include_empty
     
+    # name output directory after model name
+    cfg.OUTPUT_DIR = cfg.OUTPUT_DIR + model
+    
+    # run some default setup from Detectron2
+    # note: this eliminates:
+    # cfg.merge_from_list(args.opts)
+    # cfg.freeze()
+    if do_default_setup:
+        default_setup(cfg, {})
+
     return cfg
 
 def remove_solver_states(model_file):
@@ -216,6 +220,7 @@ def training_argument_parser():
     parser.add_argument("--weights", default=None, help="path to pth file for alternate weights initialization. used for models with alternate (non-COCO) pretraining, etc.")
     parser.add_argument("--lr", default=None, type=float, help="input custom learning rate")
     parser.add_argument("--freeze", action="store_true", help="freeze feature extractor and RPN")
+    parser.add_argument("--include_empty", action="store_true", help="include empty images in training")
     
     return parser
 
@@ -235,7 +240,7 @@ def main(args):
     # TODO add args.skip_first_stage here, since default_setup() prints invalid values in this case
     cfg = get_training_config(model=args.model, data_dir=args.data_dir, configs_dir=args.configs_dir, 
                                 device=args.device, num_gpus=args.num_gpus, loss=args.loss, weights_path=args.weights, 
-                                do_default_setup=False, lr=args.lr, freeze=args.freeze)
+                                do_default_setup=False, lr=args.lr, freeze=args.freeze, include_empty=args.include_empty)
     
     if args.stage > 0:
         convert_cfg_to_stage(cfg, args.stage)
