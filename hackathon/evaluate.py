@@ -19,22 +19,9 @@ import detectron2.utils.comm as comm
 from hackathon.data import register_image_dataset
 
 _MODELS = {
-    # model trained COCO -> all bottomfish data
-    "frcnn-bfish": { "weights": "frcnn-bfish/model_0005159.pth", # just use the first one for now
-                     "config": "frcnn-bfish/config.yaml" },
-    
-    # model trained COCO -> fishnet v0.1.2
-    "frcnn-fishnet": { "weights": "detectron2-baselines-jul2020/frcnn-r101/model_0022945.pth",
-                     "config": "detectron2-baselines-jul2020/frcnn-r101/config.yaml" },
-    
-    # model trained COCO -> all mouss data
-    "frcnn-coco-mouss": {},
-    
-    # model trained COCO -> fishnet v0.1.2 -> all mouss data
-    "frcnn-fishnet-mouss": {},
 }
 
-def get_model_for_eval(model_name, models_dir, score_threshold=0.05, nms_threshold=0.5):
+def get_model_for_eval(model_name, models_dir, score_threshold=0.05, nms_threshold=0.5, device="cuda"):
     weights = os.path.join(models_dir, _MODELS[model_name]["weights"])
     config = os.path.join(models_dir, _MODELS[model_name]["config"])
     
@@ -49,6 +36,8 @@ def get_model_for_eval(model_name, models_dir, score_threshold=0.05, nms_thresho
     # the configurable part
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = score_threshold
     cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = nms_threshold
+    
+    cfg.MODEL.DEVICE = device
     default_setup(cfg, {})
     
     return cfg

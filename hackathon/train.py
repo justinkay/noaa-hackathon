@@ -9,7 +9,10 @@ from detectron2.engine import default_setup, DefaultTrainer, hooks, default_argu
 from detectron2.evaluation import COCOEvaluator
 from detectron2.modeling import GeneralizedRCNNWithTTA
 
-from hackathon.data import register_all, register_mouss
+from hackathon.data import register_all
+
+# to import meta arch
+import hackathon.modeling
 
 
 _MODELS = {
@@ -24,7 +27,7 @@ _MODELS = {
 }
 
 
-def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, mouss_only=False):
+def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, freeze=False):
     """
     Basic configuration setup for training/validating using Fishnet.ai data.
     
@@ -42,7 +45,7 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     weights_path = weights_path or _MODELS[model]["weights"]
     config_path = configs_dir + _MODELS[model]["config"]
 
-    cfg = get_training_config_basic(config_path, weights_path, data_dir, device, num_gpus, loss, lr, mouss_only)
+    cfg = get_training_config_basic(config_path, weights_path, data_dir, device, num_gpus, loss, lr, freeze)
     
     # name output directory after model name
     cfg.OUTPUT_DIR = cfg.OUTPUT_DIR + model
@@ -56,7 +59,7 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
 
     return cfg
 
-def get_training_config_basic(config_path, weights_path, data_dir, device='cuda', num_gpus=8, loss="smooth_l1", lr=None, mouss_only=False):
+def get_training_config_basic(config_path, weights_path, data_dir, device='cuda', num_gpus=8, loss="smooth_l1", lr=None, freeze=False):
     """
     Note: does not run default_setup()
     """
@@ -77,6 +80,10 @@ def get_training_config_basic(config_path, weights_path, data_dir, device='cuda'
     cfg.merge_from_file(config_path)
     cfg.MODEL.WEIGHTS = weights_path
     
+    if freeze:
+        lr = lr / 20
+        cfg.MODEL.META_ARCHITECTURE = "FrozenRCNN"
+    
     cfg.MODEL.DEVICE = device
     cfg.SOLVER.IMS_PER_BATCH = bs
     cfg.SOLVER.BASE_LR = lr
@@ -93,11 +100,8 @@ def get_training_config_basic(config_path, weights_path, data_dir, device='cuda'
     cfg.SEED = 42
     
     # set up data
-    if mouss_only:
-        datasets = register_mouss(data_dir)
-    else:
-        datasets = register_all(data_dir)
-    val_datasets = ("lehi1", "gindai2", "onaga1")
+    datasets = register_all(data_dir)
+    val_datasets = ("rockfish_val",)
     train_datasets = tuple([d for d in datasets if d not in val_datasets])
     
     cfg.DATASETS.TRAIN = train_datasets
@@ -211,7 +215,7 @@ def training_argument_parser():
     parser.add_argument("--stage", default=0, type=int, help="which stage of training to start at. corresponds to cfg.SOLVER.STEPS")
     parser.add_argument("--weights", default=None, help="path to pth file for alternate weights initialization. used for models with alternate (non-COCO) pretraining, etc.")
     parser.add_argument("--lr", default=None, type=float, help="input custom learning rate")
-    parser.add_argument("--mouss", action="store_true", help="train on MOUSS data only")
+    parser.add_argument("--freeze", action="store_true", help="freeze feature extractor and RPN")
     
     return parser
 
@@ -231,7 +235,7 @@ def main(args):
     # TODO add args.skip_first_stage here, since default_setup() prints invalid values in this case
     cfg = get_training_config(model=args.model, data_dir=args.data_dir, configs_dir=args.configs_dir, 
                                 device=args.device, num_gpus=args.num_gpus, loss=args.loss, weights_path=args.weights, 
-                                do_default_setup=False, lr=args.lr, mouss_only=args.mouss)
+                                do_default_setup=False, lr=args.lr, freeze=args.freeze)
     
     if args.stage > 0:
         convert_cfg_to_stage(cfg, args.stage)
