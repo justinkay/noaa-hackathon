@@ -34,24 +34,25 @@ def register_dataset(dataset_name, data_dir="../data"):
     
     return dataset_name
 
-def register_image_dataset(dataset_name, img_dir, img_extension=".jpg", height=None, width=None):
+def register_image_dataset(dataset_name, img_dir, img_extensions=[".jpg", ".png", ".tif"], height=None, width=None):
     """
     Register a Dataset in Detectron2 for a directory of images with no annotations.
-    
     For your own good, provide a height and width...
     """
     try:
         del DatasetCatalog._REGISTERED[dataset_name]
     except KeyError:
         pass
-    DatasetCatalog.register(dataset_name, lambda: _get_simple_dataset_dicts(img_dir, img_extension, height, width))
+    DatasetCatalog.register(dataset_name, lambda: _get_simple_dataset_dicts(img_dir, img_extensions, height, width))
     
-def _get_simple_dataset_dicts(img_dir, img_extension=".jpg", height=None, width=None):
-    """Create a simple dataset_dict from a directory of images.
-    """
+def _get_simple_dataset_dicts(img_dir, img_extensions=[".jpg", ".png", ".tif"], height=None, width=None):
+    """Create a simple dataset_dict from a directory of images."""
     dataset_dicts = []
     
-    files = sorted([f for f in glob.glob(img_dir + "/*" + img_extension)])
+    files = []
+    for img_extension in img_extensions:
+        files += [f for f in glob.glob(img_dir + "/*" + img_extension)]
+    files = sorted(files)
     
     for i, f in enumerate(files):
         record = {}

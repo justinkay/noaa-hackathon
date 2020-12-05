@@ -34,10 +34,6 @@ class COCOLRFinder:
     """
     Implementation of PyTorch learning rate finder (https://github.com/davidtvs/pytorch-lr-finder)
     for our detectron2 configurations.
-    
-    Requires both a config and trainer object. For some reason trying to do both in one script 
-    results in the registered rcnn components throwing errors. Maybe this would fix itself if the 
-    rcnn components in train.py get moved to a new file?
     """
     def __init__(self, cfg, base_lr_scale=1000, device="cuda"):
         self.cloned_cfg = cfg.clone()

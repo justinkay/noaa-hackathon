@@ -30,8 +30,14 @@ _MODELS = {
                 "config": "/Base-Retina-EfficientNet-b4-BiFPN.yaml" },
 }
 
+_SCHEDULES = {
+    "1x": (12, 16, 18),
+    "2x": (24, 32, 36),
+    "4x": (48, 64, 72)
+}
 
-def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, freeze=False, include_empty=False):
+
+def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, freeze=False, include_empty=False, schedule="1x"):
     """
     Basic configuration setup for training/validating using Fishnet.ai data.
     
@@ -62,6 +68,7 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
         if 'retinanet' in weights_path:
             lr = lr / 2.0
     
+    # efficientnet models
     if "en-b" in model:
         from detectron2_backbone import backbone
         from detectron2_backbone.config import add_backbone_config
@@ -103,8 +110,7 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     # fix memory errors: num workers * dataset size = memory required
     cfg.DATALOADER.NUM_WORKERS = 2
     
-    # based on Detectron defaults, which trained COCO for 18 epochs
-    # and which decrease by gamma at 12 and 16 epochs when training COCO
+    # determine num images / epoch depending on if we are using empty images
     num_imgs = 0
     for train_key in train_datasets:
         dataset_dicts = DatasetCatalog.get(train_key)
@@ -119,10 +125,12 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
                 return False
             dataset_dicts = [x for x in dataset_dicts if valid(x["annotations"])]
             num_imgs += len(dataset_dicts)
-    print("Num images",num_imgs)
+    print("Num images", num_imgs)
+    
+    epochs = _SCHEDULES[schedule]
     epoch_size = int(num_imgs / bs)
-    cfg.SOLVER.MAX_ITER = 18*epoch_size
-    cfg.SOLVER.STEPS = (12*epoch_size, 16*epoch_size)
+    cfg.SOLVER.MAX_ITER = epochs[2]*epoch_size
+    cfg.SOLVER.STEPS = (epochs[0]*epoch_size, epochs[1]*epoch_size)
     
     # evaluate and save after every epoch
     # makes this a multiple of PeriodicWriter default period so that eval metrics always get written to 
@@ -157,7 +165,7 @@ def remove_solver_states(model_file):
     del model["optimizer"]
     del model["scheduler"]
     del model["iteration"]
-    print("saving model:", model)
+    print("Saving model:", model)
 
     filename_wo_ext, ext = os.path.splitext(model_file)
     output_file = filename_wo_ext + suffix + ext
@@ -166,7 +174,7 @@ def remove_solver_states(model_file):
     return output_file
 
 def convert_cfg_to_stage(cfg, stage):
-    """Modify this config to start at the second stage. Do this by decreasing the base
+    """Modify this config to start at a later stage. Do this by decreasing the base
     learning rate and adjusting solver steps accordingly."""
     weights_path = remove_solver_states(cfg.MODEL.WEIGHTS)
     cfg.MODEL.WEIGHTS = weights_path
@@ -230,6 +238,7 @@ def training_argument_parser():
     parser.add_argument("--lr", default=None, type=float, help="input custom learning rate")
     parser.add_argument("--freeze", action="store_true", help="freeze feature extractor and RPN")
     parser.add_argument("--include_empty", action="store_true", help="include empty images in training")
+    parser.add_argument("--schedule", default="1x", help="num epochs to train (x 18)")
     
     return parser
 
@@ -246,10 +255,10 @@ def main(args):
     if args.wandb:
         import wandb; wandb.init(project=args.wandb, sync_tensorboard=True)
         
-    # TODO add args.skip_first_stage here, since default_setup() prints invalid values in this case
     cfg = get_training_config(model=args.model, data_dir=args.data_dir, configs_dir=args.configs_dir, 
                                 device=args.device, num_gpus=args.num_gpus, loss=args.loss, weights_path=args.weights, 
-                                do_default_setup=False, lr=args.lr, freeze=args.freeze, include_empty=args.include_empty)
+                                do_default_setup=False, lr=args.lr, freeze=args.freeze, include_empty=args.include_empty,
+                                schedule=args.schedule)
     
     if args.stage > 0:
         convert_cfg_to_stage(cfg, args.stage)

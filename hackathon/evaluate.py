@@ -52,7 +52,7 @@ def evaluate_coco_dataset(cfg, dataset_name, distributed=False):
     val_loader = build_detection_test_loader(cfg, dataset_name)
     inference_on_dataset(model, val_loader, evaluator)
     
-def evaluate_img_dir(cfg, input_dir, height=None, width=None, distributed=False, extension=".png"):
+def evaluate_img_dir(cfg, input_dir, height=None, width=None, distributed=False, output_fname="instances_predictions.pth"):
     """
     Get predictions for an image directory using Detectron2, and save pickled
     results (predictions of Instances) to the same directory.
@@ -64,11 +64,10 @@ def evaluate_img_dir(cfg, input_dir, height=None, width=None, distributed=False,
     Note: "evaluation" (calculation of metrics) is not performed.
     """
     dataset_name = os.path.basename(os.path.dirname(input_dir))
-    register_image_dataset(dataset_name, input_dir, height=height, width=width, img_extension=extension)
+    register_image_dataset(dataset_name, input_dir, height=height, width=width)
     model = DefaultPredictor(cfg).model
-    evaluator = SimpleEvaluator(dataset_name, cfg, distributed=distributed, output_dir=input_dir)
+    evaluator = SimpleEvaluator(dataset_name, cfg, distributed=distributed, output_dir=input_dir, output_fname=output_fname)
     val_loader = build_detection_test_loader(cfg, dataset_name)
-    print(val_loader)
     inference_on_dataset(model, val_loader, evaluator)
     
 class SimpleEvaluator(DatasetEvaluator):
@@ -79,7 +78,7 @@ class SimpleEvaluator(DatasetEvaluator):
     Adapted from detectron2 COCOEvaluator.
     """
 
-    def __init__(self, dataset_name, cfg, distributed, output_dir=None):
+    def __init__(self, dataset_name, cfg, distributed, output_dir=None, output_fname="instances_predictions.pth"):
         """
         Args:
             dataset_name (str): name of the dataset to be evaluated.
@@ -95,6 +94,7 @@ class SimpleEvaluator(DatasetEvaluator):
         """
         self._distributed = distributed
         self._output_dir = output_dir
+        self._output_fname = output_fname
 
         self._cpu_device = torch.device("cpu")
         self._logger = logging.getLogger(__name__)
@@ -138,7 +138,7 @@ class SimpleEvaluator(DatasetEvaluator):
 
         if self._output_dir:
             PathManager.mkdirs(self._output_dir)
-            file_path = os.path.join(self._output_dir, "instances_predictions.pth")
+            file_path = os.path.join(self._output_dir, self._output_fname)
             with PathManager.open(file_path, "wb") as f:
                 torch.save(self._predictions, f)
 
