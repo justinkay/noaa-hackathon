@@ -24,6 +24,10 @@ _MODELS = {
                      "config": "/COCO-Detection/retinanet_R_50_FPN_3x.yaml" },
     "retinanet-r101": { "weights": "detectron2://COCO-Detection/retinanet_R_101_FPN_3x/138363263/model_final_59f53c.pkl",
                      "config": "/COCO-Detection/retinanet_R_101_FPN_3x.yaml" },
+    "en-b0": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b0_detectron2.pth",
+                "config": "/Base-Retina-EfficientNet-b0-BiFPN.yaml" },
+    "en-b4": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b4_detectron2.pth",
+                "config": "/Base-Retina-EfficientNet-b4-BiFPN.yaml" },
 }
 
 
@@ -57,6 +61,11 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
         # reduce Retinanet LR; TODO kind of hacky
         if 'retinanet' in weights_path:
             lr = lr / 2.0
+    
+    if "en-b" in model:
+        from detectron2_backbone import backbone
+        from detectron2_backbone.config import add_backbone_config
+        add_backbone_config(cfg)
     
     # do this first, because we will overwrite
     cfg.merge_from_file(config_path)
