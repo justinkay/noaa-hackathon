@@ -92,8 +92,6 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
         cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_TYPE = "giou"
         cfg.MODEL.ROI_BOX_HEAD.BBOX_REG_LOSS_WEIGHT = 10.0 # Detectron2 default value (TODO)
     
-    # now the default stuff:
-
     # use a seed for reproducibility
     cfg.SEED = 42
     
@@ -141,7 +139,7 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS = not include_empty
     
     # name output directory after model name
-    cfg.OUTPUT_DIR = cfg.OUTPUT_DIR + model
+    cfg.OUTPUT_DIR = cfg.OUTPUT_DIR + "_" + model + "_" + schedule
     
     # run some default setup from Detectron2
     # note: this eliminates:

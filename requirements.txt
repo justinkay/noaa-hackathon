@@ -8,3 +8,4 @@ opencv-python==4.4.0.46
 ipykernel==5.3.4
 torchvision==0.7.0+cu101
 wandb
+ipywidgets

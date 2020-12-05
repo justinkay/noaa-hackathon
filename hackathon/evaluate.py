@@ -5,11 +5,12 @@ import os
 import torch
 import logging
 import itertools
+from torch.nn.parallel import DistributedDataParallel
 from fvcore.common.file_io import PathManager
 
 from detectron2.config import get_cfg
 from detectron2.data import build_detection_test_loader
-from detectron2.engine import default_setup
+from detectron2.engine import default_setup, launch, default_argument_parser
 from detectron2.engine.defaults import DefaultPredictor
 from detectron2.evaluation import inference_on_dataset
 from detectron2.evaluation.evaluator import DatasetEvaluator
@@ -19,13 +20,21 @@ import detectron2.utils.comm as comm
 from hackathon.data import register_image_dataset
 
 _MODELS = {
+    # retinanet w/ efficientnet-b0-bifpn backbone, trained on pts + buffered boxes, 2x schedule (36 epochs)
+    "en-b0-ptannos-2x": "pt_annos/en_b0_2x",
 }
 
 def get_model_for_eval(model_name, models_dir, score_threshold=0.05, nms_threshold=0.5, device="cuda"):
-    weights = os.path.join(models_dir, _MODELS[model_name]["weights"])
-    config = os.path.join(models_dir, _MODELS[model_name]["config"])
+    weights = os.path.join(os.path.join(models_dir, _MODELS[model_name]), "model_final.pth")
+    config = os.path.join(os.path.join(models_dir, _MODELS[model_name]), "config.yaml")
     
     cfg = get_cfg()
+    
+    # efficientnet models
+    if "en-b" in model_name:
+        from detectron2_backbone import backbone
+        from detectron2_backbone.config import add_backbone_config
+        add_backbone_config(cfg)
     
     if config is not None:
         cfg.merge_from_file(config)
@@ -42,17 +51,19 @@ def get_model_for_eval(model_name, models_dir, score_threshold=0.05, nms_thresho
     
     return cfg
 
-def evaluate_coco_dataset(cfg, dataset_name, distributed=False):
+def evaluate_coco_dataset(cfg, dataset_name):
     """
     Perform evaluation on a Detectron2 dataset using COCO metrics.
-    This is how we benchmark our models currently.
+    Distributed is False, like in Detectron2, because it affects evaluation
+    metrics.
     """
     model = DefaultPredictor(cfg).model
-    evaluator = COCOEvaluator(dataset_name, cfg, distributed)
+    evaluator = COCOEvaluator(dataset_name, cfg, distributed=False)
     val_loader = build_detection_test_loader(cfg, dataset_name)
     inference_on_dataset(model, val_loader, evaluator)
     
-def evaluate_img_dir(cfg, input_dir, height=None, width=None, distributed=False, output_fname="instances_predictions.pth"):
+def evaluate_img_dir(cfg, input_dir, height=None, width=None, distributed=False, 
+                     output_fname="instances_predictions.pth"):
     """
     Get predictions for an image directory using Detectron2, and save pickled
     results (predictions of Instances) to the same directory.
@@ -66,9 +77,49 @@ def evaluate_img_dir(cfg, input_dir, height=None, width=None, distributed=False,
     dataset_name = os.path.basename(os.path.dirname(input_dir))
     register_image_dataset(dataset_name, input_dir, height=height, width=width)
     model = DefaultPredictor(cfg).model
+    
+    if distributed and comm.get_world_size() > 1:
+        model = DistributedDataParallel(
+            model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
+        )
+    
     evaluator = SimpleEvaluator(dataset_name, cfg, distributed=distributed, output_dir=input_dir, output_fname=output_fname)
-    val_loader = build_detection_test_loader(cfg, dataset_name)
+    if distributed:
+        val_loader = build_detection_test_loader_multi(cfg, dataset_name)
+    else:
+        val_loader = build_detection_test_loader(cfg, dataset_name)
     inference_on_dataset(model, val_loader, evaluator)
+    
+def build_detection_test_loader_multi(cfg, dataset_name, mapper=None):
+    """
+    Modified version of detectron2.data.build_detection_test_loader which allows for multi-gpu
+    inference.
+    """
+    from detectron2.data.build import get_detection_dataset_dicts, DatasetFromList, DatasetMapper, MapDataset, InferenceSampler, trivial_batch_collator, build_batch_data_loader
+    
+    dataset_dicts = get_detection_dataset_dicts(
+        [dataset_name],
+        filter_empty=False,
+        proposal_files=[
+            cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(dataset_name)]
+        ]
+        if cfg.MODEL.LOAD_PROPOSALS
+        else None,
+    )
+
+    dataset = DatasetFromList(dataset_dicts)
+    if mapper is None:
+        mapper = DatasetMapper(cfg, False)
+    dataset = MapDataset(dataset, mapper)
+    sampler = InferenceSampler(len(dataset))
+    
+    # from train loader
+    return build_batch_data_loader(
+        dataset,
+        sampler,
+        cfg.SOLVER.IMS_PER_BATCH,
+        num_workers=cfg.DATALOADER.NUM_WORKERS,
+    )
     
 class SimpleEvaluator(DatasetEvaluator):
     """
@@ -156,35 +207,62 @@ class SimpleEvaluator(DatasetEvaluator):
             predictions = torch.load(f)
         return predictions
     
+def find_subdirs_with_images(base_dir):
+    """Recursively find subdirectories that contain ims with extension {.tif, .jpg, .png}"""
+    inc = [os.path.join(base_dir, f) for f in os.listdir(base_dir) if not f.startswith(".")]
+    ims = [f for f in inc if os.path.isfile(f) if f.endswith(".tif") or f.endswith(".jpg") or f.endswith(".png")]
+    subdirs = [f for f in inc if os.path.isdir(f)]
+    
+    dirs_with_ims = []
+    if len(ims):
+        dirs_with_ims.append(base_dir)
+    
+    for subdir in subdirs:
+        dirs_with_ims += find_subdirs_with_images(subdir)
+    
+    return dirs_with_ims
+    
 def eval_argument_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="frcnn-bfish", 
-                        help="name of model to use, from .evaluate._MODELS")
+    # get parse with Detectron2 default commands
+    parser = default_argument_parser()
+    parser.add_argument("--model", default="en-b0-ptannos-2x", help="name of model to use, from .evaluate._MODELS")
     parser.add_argument("--models_dir", default="../models/", help="location of directory containing models, " +
                         "resulting in correct paths in evaluate.py")
     parser.add_argument("--score_thresh", default=0.05, help="confidence threshold for object detector.")
     parser.add_argument("--nms_thresh", default=0.5, help="nms threshold for object detector, if applicable.")
     parser.add_argument("--src", default="", help="input location of img frames")
+    parser.add_argument("--subdirs", action="store_true", help="Evaluate on all subdirectories of src with images")
     
     return parser
     
 def main(args):
     cfg = get_model_for_eval(args.model, args.models_dir, float(args.score_thresh), float(args.nms_thresh))
+    cfg.SOLVER.IMS_PER_BATCH = 2 * args.num_gpus
     
-    # assume all imgs the same resolution
-    jpgs = glob.glob(args.src + "/*.jpg") 
-    pngs = glob.glob(args.src + "/*.png")
-    if len(jpgs):
-        extension = ".jpg"
+    if args.subdirs:
+        dirs = find_subdirs_with_images(args.src)
+        print("Performing inference on", len(dirs), "directories")
     else:
-        extension = ".png"
-    files = jpgs + pngs
-    sample_im_p = files[0]
-    sample_im = cv2.imread(sample_im_p)
-    h, w, c = sample_im.shape
+        dirs = [args.src]
     
-    evaluate_img_dir(cfg, args.src, height=h, width=w, extension=extension)
+    # assumes all ims in a dir are the same resolution
+    for d in dirs:
+        inc = [os.path.join(d, f) for f in os.listdir(d) if not f.startswith(".")]
+        ims = [f for f in inc if os.path.isfile(f) if f.endswith(".tif") or f.endswith(".jpg") or f.endswith(".png")]
+        print("Inference on", len(ims), "images in", d)
+        h, w = cv2.imread(ims[0]).shape[:2]
+
+        output_fname = args.model + "_preds.pth"
+        evaluate_img_dir(cfg, d, height=h, width=w, distributed=True, output_fname=output_fname)
     
 if __name__ == "__main__":
     args = eval_argument_parser().parse_args()
-    main(args)
+    print("Command Line Args:", args)
+    launch(
+        main,
+        args.num_gpus,
+        num_machines=args.num_machines,
+        machine_rank=args.machine_rank,
+        dist_url=args.dist_url,
+        args=(args,),
+    )

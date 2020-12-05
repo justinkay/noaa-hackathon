@@ -3,12 +3,12 @@ MODEL:
   BACKBONE:
     NAME: "build_efficientnet_bifpn_backbone"
   EFFICIENTNET:
-    NAME: "efficientnet_b4" # efficientnet_b1, efficientnet_2,  ..., efficientnet_b7
-    OUT_FEATURES: ["stride8", "stride16", "stride32"] # Note Justin tried ["stride4", "stride8", "stride16", "stride32"] to match other parts of code
+    NAME: "efficientnet_b0" # efficientnet_b1, efficientnet_2,  ..., efficientnet_b7
+    OUT_FEATURES: ["stride8", "stride16", "stride32"]
   FPN:
-    IN_FEATURES: ["stride8", "stride16", "stride32"] # needs to match EFFICIENTNET.OUT_FEATURES
-    OUT_CHANNELS: 64 # would be 224 to match efficientdet paper
-    REPEAT: 3 # would be 7 to match efficientdet paper
+    IN_FEATURES: ["stride8", "stride16", "stride32"]
+    OUT_CHANNELS: 64
+    REPEAT: 3
   RESNETS:
     OUT_FEATURES: ["res3", "res4", "res5"]
   ANCHOR_GENERATOR:
