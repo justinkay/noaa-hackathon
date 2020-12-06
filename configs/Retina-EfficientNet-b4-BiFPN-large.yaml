@@ -4,12 +4,12 @@ MODEL:
     NAME: "build_efficientnet_bifpn_backbone"
   EFFICIENTNET:
     NAME: "efficientnet_b4"
-    OUT_FEATURES: ["stride8", "stride16", "stride32"] # just 3 recommended for bifpn?
+    OUT_FEATURES: ["stride8", "stride16", "stride32"]
     FEATURE_INDICES: [2, 9, 21, 31]
   FPN:
-    IN_FEATURES: ["stride8", "stride16", "stride32"] # just 3 recommended for bifpn?
-    OUT_CHANNELS: 64 # would be 224 to match efficientdet paper; didn't work
-    REPEAT: 3 # would be 7 to match efficientdet paper; didn't work
+    IN_FEATURES: ["stride8", "stride16", "stride32"]
+    OUT_CHANNELS: 224 # to match efficientdet paper
+    REPEAT: 7 # to match efficientdet paper
   ANCHOR_GENERATOR:
     SIZES: !!python/object/apply:eval ["[[x, x * 2**(1.0/3), x * 2**(2.0/3) ] for x in [32, 64, 128, 256, 512 ]]"]
   RETINANET:
