@@ -1,0 +1,3 @@
+[submodule "lib/detectron2_backbone"]
+	path = lib/detectron2_backbone
+	url = https://github.com/sxhxliang/detectron2_backbone.git
