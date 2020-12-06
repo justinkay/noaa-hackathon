@@ -1,3 +1,4 @@
+"""Usage like: python evaluate.py --src ../data/rockfish_full --num-gpus 8 --score_thresh 0.5 --subdirs"""
 import argparse
 import cv2
 import glob

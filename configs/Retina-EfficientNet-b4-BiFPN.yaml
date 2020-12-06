@@ -1,12 +1,15 @@
 MODEL:
   META_ARCHITECTURE: "RetinaNet"
   BACKBONE:
-    NAME: "build_efficientnet_fpn_backbone"
+    NAME: "build_efficientnet_bifpn_backbone"
   EFFICIENTNET:
-    NAME: "efficientnet_b7" # efficientnet_b1, efficientnet_2,  ..., efficientnet_b7
-    OUT_FEATURES: ["stride4", "stride8", "stride16", "stride32"]
+    NAME: "efficientnet_b4" # efficientnet_b1, efficientnet_2,  ..., efficientnet_b7
+    OUT_FEATURES: ["stride8", "stride16", "stride32"] # Note Justin tried ["stride4", "stride8", "stride16", "stride32"] to match other parts of code
+    FEATURE_INDICES: [2, 9, 21, 31]
   FPN:
-    IN_FEATURES: ["stride4", "stride8", "stride16", "stride32"]
+    IN_FEATURES: ["stride8", "stride16", "stride32"] # needs to match EFFICIENTNET.OUT_FEATURES
+    OUT_CHANNELS: 224 # 64 # would be 224 to match efficientdet paper
+    REPEAT: 7 #3 # would be 7 to match efficientdet paper
   RESNETS:
     OUT_FEATURES: ["res3", "res4", "res5"]
   ANCHOR_GENERATOR:

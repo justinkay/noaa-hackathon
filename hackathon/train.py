@@ -24,10 +24,12 @@ _MODELS = {
                      "config": "/COCO-Detection/retinanet_R_50_FPN_3x.yaml" },
     "retinanet-r101": { "weights": "detectron2://COCO-Detection/retinanet_R_101_FPN_3x/138363263/model_final_59f53c.pkl",
                      "config": "/COCO-Detection/retinanet_R_101_FPN_3x.yaml" },
-    "en-b0": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b0_detectron2.pth",
-                "config": "/Base-Retina-EfficientNet-b0-BiFPN.yaml" },
-    "en-b4": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b4_detectron2.pth",
-                "config": "/Base-Retina-EfficientNet-b4-BiFPN.yaml" },
+    
+    "en-b0-bifpn": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b0_detectron2.pth",
+                "config": "/Retina-EfficientNet-b0-BiFPN.yaml" },
+    
+    "en-b4-bifpn": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b4_detectron2.pth",
+                "config": "/Retina-EfficientNet-b4-BiFPN.yaml" },
 }
 
 _SCHEDULES = {
