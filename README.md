@@ -16,5 +16,12 @@ conda activate noaa
 python -m ipykernel install --user --name noaa
 ```
 
+Install submodules:
+```
+git submodule update --init
+cd lib/detectron2_backbone
+python setup.py build develop
+```
+
 Notes: 
 - assumes CUDA 10.1, and will install pytorch 1.6
