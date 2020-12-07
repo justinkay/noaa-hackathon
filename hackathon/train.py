@@ -99,7 +99,7 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     
     # set up data
     datasets = register_all(data_dir)
-    val_datasets = ("rockfish_val",)
+    val_datasets = ("jimmy_fct_lynker_val",)
     train_datasets = tuple([d for d in datasets if d not in val_datasets])
     
     cfg.DATASETS.TRAIN = train_datasets

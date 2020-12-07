@@ -5,14 +5,23 @@ from detectron2.data import DatasetCatalog
 from detectron2.data.datasets import register_coco_instances
 
 _DATASETS = {
-    "rockfish_train": {
-        "imgs_loc": "rockfish/OCNMS_port/",
-        "labels_loc": "rockfish/coco/rockfish_train.json"
+#     "rockfish_train": {
+#         "imgs_loc": "rockfish/OCNMS_port/",
+#         "labels_loc": "rockfish/coco/rockfish_train.json"
+#     },
+#     "rockfish_val": {
+#         "imgs_loc": "rockfish/OCNMS_port/",
+#         "labels_loc": "rockfish/coco/rockfish_val.json"
+#     },
+    # img paths are in json filenames
+    "jimmy_fct_lynker_train": {
+        "imgs_loc": "",
+        "labels_loc": "coco/jimmy_fct_lynker_train.json"
     },
-    "rockfish_val": {
-        "imgs_loc": "rockfish/OCNMS_port/",
-        "labels_loc": "rockfish/coco/rockfish_val.json"
-    }
+    "jimmy_fct_lynker_val": {
+        "imgs_loc": "",
+        "labels_loc": "coco/jimmy_fct_lynker_val.json"
+    },
 }
 
 def register_all(data_dir="../data"):
