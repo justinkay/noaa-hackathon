@@ -1,10 +1,8 @@
-"""TODO: Don't know if any of this is still used..."""
-
 import os
 import glob
 import torch
 
-from hackathon.evaluate import SimpleEvaluator
+from hackathon.predict import SimpleEvaluator
 
 
 class BoundingBox:

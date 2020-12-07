@@ -29,14 +29,14 @@ _DATASETS = {
 #     },
     
     # Jake's Sunday labels minus poorly annotated sets
-    # use this as the final validation set for all experiments for consistency !
     "jimmy_fct_lynker_train_fixed_6k_22k": {
         "imgs_loc": "",
-        "labels_loc": "coco/jimmy_fct_lynker_train_fixed_6k_22k"
+        "labels_loc": "rockfish_labels/coco/jimmy_fct_lynker_train_fixed_6k_22k.json"
     },
+    # use this as the final validation set for all experiments for consistency !
     "all_val": {
         "imgs_loc": "",
-        "labels_loc": "coco/jimmy_fct_lynker_val_fixed_1484_4653.json"
+        "labels_loc": "rockfish_labels/coco/jimmy_fct_lynker_val_fixed_1484_4653.json"
     },
     
 }

@@ -23,6 +23,9 @@ from hackathon.data import register_image_dataset
 _MODELS = {
     # retinanet w/ efficientnet-b0-bifpn backbone, trained on pts + buffered boxes, 2x schedule (36 epochs)
     "en-b0-ptannos-2x": "pt_annos/en_b0_2x",
+    
+    # faster rcnn w/ resnet 101 FPN backbone, trained on corrected 6k labels, 1x schedule
+    "frcnn-r101-6k-1x": "6k/frcnn-r101"
 }
 
 def get_model_for_eval(model_name, models_dir, score_threshold=0.05, nms_threshold=0.5, device="cuda"):
@@ -209,8 +212,8 @@ class SimpleEvaluator(DatasetEvaluator):
         return predictions
     
 def find_subdirs_with_images(base_dir):
-    """Recursively find subdirectories that contain ims with extension {.tif, .jpg, .png}"""
-    inc = [os.path.join(base_dir, f) for f in os.listdir(base_dir) if not f.startswith(".")]
+    """Recursively find subdirectories that contain (unlabeled) ims with extension {.tif, .jpg, .png}"""
+    inc = [os.path.join(base_dir, f) for f in os.listdir(base_dir) if (not f.startswith(".") and not "Labeled" in f and not "Fish_Crawlers_NonAttached" in f)]
     ims = [f for f in inc if os.path.isfile(f) if f.endswith(".tif") or f.endswith(".jpg") or f.endswith(".png")]
     subdirs = [f for f in inc if os.path.isdir(f)]
     
@@ -226,10 +229,10 @@ def find_subdirs_with_images(base_dir):
 def eval_argument_parser():
     # get parse with Detectron2 default commands
     parser = default_argument_parser()
-    parser.add_argument("--model", default="en-b0-ptannos-2x", help="name of model to use, from .evaluate._MODELS")
+    parser.add_argument("--model", default="frcnn-r101-6k-1x", help="name of model to use, from .evaluate._MODELS")
     parser.add_argument("--models_dir", default="../models/", help="location of directory containing models, " +
                         "resulting in correct paths in evaluate.py")
-    parser.add_argument("--score_thresh", default=0.05, help="confidence threshold for object detector.")
+    parser.add_argument("--score_thresh", default=0.5, help="confidence threshold for object detector.")
     parser.add_argument("--nms_thresh", default=0.5, help="nms threshold for object detector, if applicable.")
     parser.add_argument("--src", default="", help="input location of img frames")
     parser.add_argument("--subdirs", action="store_true", help="Evaluate on all subdirectories of src with images")
