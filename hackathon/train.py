@@ -10,6 +10,7 @@ from detectron2.evaluation import COCOEvaluator
 from detectron2.modeling import GeneralizedRCNNWithTTA
 
 from hackathon.data import register_all
+from hackathon.evaluate import COCOEvaluatorWithAR
 
 # to import meta arch
 import hackathon.modeling
@@ -201,7 +202,7 @@ class COCOTrainer(DefaultTrainer):
     """
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
-        return COCOEvaluator(dataset_name, cfg, distributed=True)
+        return COCOEvaluatorWithAR(dataset_name, cfg, distributed=True)
 
     @classmethod
     def test_with_TTA(cls, cfg, model):

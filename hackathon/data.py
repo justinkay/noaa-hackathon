@@ -30,7 +30,7 @@ _DATASETS = {
     
     # Jake's Sunday labels minus poorly annotated sets
     # use this as the final validation set for all experiments for consistency !
-    "jimmy_fct_lynker_train": {
+    "jimmy_fct_lynker_train_fixed_6k_22k": {
         "imgs_loc": "",
         "labels_loc": "coco/jimmy_fct_lynker_train_fixed_6k_22k"
     },
