@@ -2,9 +2,11 @@ import logging
 import os
 from collections import OrderedDict
 import torch
+import glob
 
 from detectron2.config import get_cfg
 from detectron2.data import DatasetCatalog, build_detection_test_loader
+from detectron2.data.datasets import register_coco_instances
 from detectron2.engine import default_setup, DefaultTrainer, hooks, default_argument_parser, launch
 from detectron2.evaluation import COCOEvaluator
 from detectron2.modeling import GeneralizedRCNNWithTTA
@@ -38,7 +40,7 @@ _SCHEDULES = {
 }
 
 
-def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, freeze=False, include_empty=False, schedule="1x"):
+def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, freeze=False, include_empty=False, schedule="1x", self_train_model=None):
     """
     Basic configuration setup for training/validating using Fishnet.ai data.
     
@@ -99,7 +101,12 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     # set up data
     datasets = register_all(data_dir)
     val_datasets = ("all_val",)
-    train_datasets = tuple([d for d in datasets if d not in val_datasets])
+    
+    if self_train_model:
+        self_train_datasets = register_self_train(data_dir, self_train_model)
+        train_datasets = tuple([d for d in datasets if d not in val_datasets] + self_train_datasets)
+    else:
+        train_datasets = tuple([d for d in datasets if d not in val_datasets])
     
     cfg.DATASETS.TRAIN = train_datasets
     cfg.DATASETS.TEST = val_datasets
@@ -186,6 +193,26 @@ def convert_cfg_to_stage(cfg, stage):
     for step in cfg.SOLVER.STEPS[stage:]:
         new_steps.append(step - original_stage_start)
     cfg.SOLVER.STEPS = tuple(new_steps)
+    
+def register_self_train(data_dir, model_name):
+    """Register COCO labels from inference performed by predict._MODELS.model_name"""
+    cocos = glob.glob(data_dir + "/**/"+model_name+"*coco.json", recursive=True)
+    
+    datasets = []
+    for coco in cocos:
+        dataset = os.path.dirname(coco)
+        
+        try:
+            del DatasetCatalog._REGISTERED[dataset]
+        except KeyError:
+            pass
+        
+        # note filepaths are all relative to hackathon directory
+        register_coco_instances(dataset, {}, coco, data_dir)
+        datasets.append(dataset)
+
+    print("Registered", len(datasets), "datasets for self-training.")
+    return datasets
 
 def get_coco_trainer(cfg, resume=False):
     trainer = COCOTrainer(cfg)
@@ -238,6 +265,7 @@ def training_argument_parser():
     parser.add_argument("--freeze", action="store_true", help="freeze feature extractor and RPN")
     parser.add_argument("--include_empty", action="store_true", help="include empty images in training")
     parser.add_argument("--schedule", default="1x", help="num epochs to train (x 18)")
+    parser.add_argument("--self-train", default=None, help="name of model whose predictions to use for self training")
     
     return parser
 
@@ -257,7 +285,7 @@ def main(args):
     cfg = get_training_config(model=args.model, data_dir=args.data_dir, configs_dir=args.configs_dir, 
                                 device=args.device, num_gpus=args.num_gpus, loss=args.loss, weights_path=args.weights, 
                                 do_default_setup=False, lr=args.lr, freeze=args.freeze, include_empty=args.include_empty,
-                                schedule=args.schedule)
+                                schedule=args.schedule, self_train_model=args.self_train)
     
     if args.stage > 0:
         convert_cfg_to_stage(cfg, args.stage)
