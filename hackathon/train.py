@@ -24,10 +24,8 @@ _MODELS = {
                      "config": "/COCO-Detection/retinanet_R_50_FPN_3x.yaml" },
     "retinanet-r101": { "weights": "detectron2://COCO-Detection/retinanet_R_101_FPN_3x/138363263/model_final_59f53c.pkl",
                      "config": "/COCO-Detection/retinanet_R_101_FPN_3x.yaml" },
-    
     "en-b0-bifpn": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b0_detectron2.pth",
                 "config": "/Retina-EfficientNet-b0-BiFPN.yaml" },
-    
     "en-b4-bifpn": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b4_detectron2.pth",
                 "config": "/Retina-EfficientNet-b4-BiFPN.yaml" },
 }
@@ -99,7 +97,7 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     
     # set up data
     datasets = register_all(data_dir)
-    val_datasets = ("jimmy_fct_lynker_val",)
+    val_datasets = ("all_val",)
     train_datasets = tuple([d for d in datasets if d not in val_datasets])
     
     cfg.DATASETS.TRAIN = train_datasets

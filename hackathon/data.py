@@ -5,6 +5,9 @@ from detectron2.data import DatasetCatalog
 from detectron2.data.datasets import register_coco_instances
 
 _DATASETS = {
+    
+    # original labels:
+    # Abi's fish point annotations + buffered bounding boxes 220 x 220
 #     "rockfish_train": {
 #         "imgs_loc": "rockfish/OCNMS_port/",
 #         "labels_loc": "rockfish/coco/rockfish_train.json"
@@ -13,15 +16,29 @@ _DATASETS = {
 #         "imgs_loc": "rockfish/OCNMS_port/",
 #         "labels_loc": "rockfish/coco/rockfish_val.json"
 #     },
-    # img paths are in json filenames
+    
+    # fish point labels + Lynker manual bounding boxes + Jimmy PhD annotations
+    # generated Sunday by Jake
+#     "jimmy_fct_lynker_train": {
+#         "imgs_loc": "",
+#         "labels_loc": "coco/jimmy_fct_lynker_train.json"
+#     },
+#     "jimmy_fct_lynker_val": {
+#         "imgs_loc": "",
+#         "labels_loc": "coco/jimmy_fct_lynker_val.json"
+#     },
+    
+    # Jake's Sunday labels minus poorly annotated sets
+    # use this as the final validation set for all experiments for consistency !
     "jimmy_fct_lynker_train": {
         "imgs_loc": "",
-        "labels_loc": "coco/jimmy_fct_lynker_train.json"
+        "labels_loc": "coco/jimmy_fct_lynker_train_fixed_6k_22k"
     },
-    "jimmy_fct_lynker_val": {
+    "all_val": {
         "imgs_loc": "",
-        "labels_loc": "coco/jimmy_fct_lynker_val.json"
+        "labels_loc": "coco/jimmy_fct_lynker_val_fixed_1484_4653.json"
     },
+    
 }
 
 def register_all(data_dir="../data"):
