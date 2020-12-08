@@ -34,6 +34,7 @@ _MODELS = {
 }
 
 _SCHEDULES = {
+    "0.5x":  (6, 8, 9),
     "1x": (12, 16, 18),
     "2x": (24, 32, 36),
     "4x": (48, 64, 72)
@@ -106,8 +107,6 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     if self_train_model:
         self_train_datasets = register_self_train(data_dir, self_train_model)
         train_datasets = (*self_train_datasets, *train_datasets, )
-        print("==vvvvvvvvv==")
-        print(train_datasets)
         
     cfg.DATASETS.TRAIN = train_datasets
     cfg.DATASETS.TEST = val_datasets
