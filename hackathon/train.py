@@ -40,7 +40,7 @@ _SCHEDULES = {
 }
 
 
-def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, freeze=False, include_empty=False, schedule="1x", self_train_model=None):
+def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda", num_gpus=8, loss="smooth_l1", weights_path=None, do_default_setup=True, lr=None, freeze=False, include_empty=False, schedule="1x", self_train_model=None, pct=100):
     """
     Basic configuration setup for training/validating using Fishnet.ai data.
     
@@ -100,14 +100,15 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     
     # set up data
     datasets = register_all(data_dir)
-    val_datasets = ("all_val",)
+    val_datasets = ("val",)
+    train_datasets = ("train_pct{}".format(pct),)
     
     if self_train_model:
         self_train_datasets = register_self_train(data_dir, self_train_model)
-        train_datasets = tuple([d for d in datasets if d not in val_datasets] + self_train_datasets)
-    else:
-        train_datasets = tuple([d for d in datasets if d not in val_datasets])
-    
+        train_datasets = (*self_train_datasets, *train_datasets, )
+        print("==vvvvvvvvv==")
+        print(train_datasets)
+        
     cfg.DATASETS.TRAIN = train_datasets
     cfg.DATASETS.TEST = val_datasets
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
@@ -266,6 +267,7 @@ def training_argument_parser():
     parser.add_argument("--include_empty", action="store_true", help="include empty images in training")
     parser.add_argument("--schedule", default="1x", help="num epochs to train (x 18)")
     parser.add_argument("--self-train", default=None, help="name of model whose predictions to use for self training")
+    parser.add_argument("--pct", default=100, help="how much of the training set do you want? {10pct, 25pct, 50pct, 100pct}")
     
     return parser
 
@@ -285,7 +287,7 @@ def main(args):
     cfg = get_training_config(model=args.model, data_dir=args.data_dir, configs_dir=args.configs_dir, 
                                 device=args.device, num_gpus=args.num_gpus, loss=args.loss, weights_path=args.weights, 
                                 do_default_setup=False, lr=args.lr, freeze=args.freeze, include_empty=args.include_empty,
-                                schedule=args.schedule, self_train_model=args.self_train)
+                                schedule=args.schedule, self_train_model=args.self_train, pct=args.pct)
     
     if args.stage > 0:
         convert_cfg_to_stage(cfg, args.stage)
