@@ -8,23 +8,23 @@ _DATASETS = {
     # use this as the final validation set for all experiments for consistency !
     "val": {
         "imgs_loc": "",
-        "labels_loc": "rockfish_labels/coco/jimmy_lynker_val_5k_21k.json"
+        "labels_loc": "rockfish_labels/coco/jimmy_lynker_val_5k_25k_v2.json"
     },
     "train_pct10": {
         "imgs_loc": "",
-        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_21k_pct10.json"
+        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_25k_10pct_v2.json"
     },
     "train_pct25": {
         "imgs_loc": "",
-        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_21k_pct25.json"
+        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_25k_25pct_v2.json"
     },
     "train_pct50": {
         "imgs_loc": "",
-        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_21k_pct50.json"
+        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_25k_25pct_v2.json"
     },
     "train_full": {
         "imgs_loc": "",
-        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_21k.json"
+        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_25k_v2.json"
     },
 }
 
