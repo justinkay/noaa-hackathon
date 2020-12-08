@@ -31,9 +31,12 @@ _MODELS = {
                 "config": "/Retina-EfficientNet-b0-BiFPN.yaml" },
     "en-b4-bifpn": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b4_detectron2.pth",
                 "config": "/Retina-EfficientNet-b4-BiFPN.yaml" },
+    "x152": { "weights": "detectron2://Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv/18131413/model_0039999_e76410.pkl",
+        "config": "/COCO-Detection/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml" }
 }
 
 _SCHEDULES = {
+    "half": (6, 10, 12), # first stage cut in half
     "1x": (12, 16, 18),
     "2x": (24, 32, 36),
     "4x": (48, 64, 72)
