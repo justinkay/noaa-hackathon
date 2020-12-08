@@ -20,7 +20,7 @@ _DATASETS = {
     },
     "train_pct50": {
         "imgs_loc": "",
-        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_25k_25pct_v2.json"
+        "labels_loc": "rockfish_labels/coco/jimmy_lynker_train_5k_25k_50pct_v2.json"
     },
     "train_pct100": {
         "imgs_loc": "",
