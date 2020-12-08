@@ -1,4 +1,4 @@
-"""Usage like: python predict.py --src ../data/rockfish_full --num-gpus 8 --score_thresh 0.5 --subdirs"""
+"""Usage like: python predict.py --model frcnn-10pct --src ../data/rockfish_full --num-gpus 8 --score_thresh 0.5 --subdirs"""
 import argparse
 import cv2
 import glob
@@ -21,11 +21,8 @@ import detectron2.utils.comm as comm
 from hackathon.data import register_image_dataset
 
 _MODELS = {
-    # retinanet w/ efficientnet-b0-bifpn backbone, trained on pts + buffered boxes, 2x schedule (36 epochs)
-    "en-b0-ptannos-2x": "pt_annos/en_b0_2x",
-    
-    # faster rcnn w/ resnet 101 FPN backbone, trained on corrected 6k labels, 1x schedule
-    "frcnn-r101-6k-1x": "6k/frcnn-r101"
+    "frcnn-10pct": "4k/output_frcnn-r101_1x_10pct",
+    "x152": "4k/output_x152_1x"
 }
 
 def get_model_for_eval(model_name, models_dir, score_threshold=0.05, nms_threshold=0.5, device="cuda"):
