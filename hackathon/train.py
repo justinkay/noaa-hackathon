@@ -117,9 +117,6 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1
     cfg.MODEL.RETINANET.NUM_CLASSES = 1
     
-    # fix memory errors: num workers * dataset size = memory required
-    cfg.DATALOADER.NUM_WORKERS = 2
-    
     # determine num images / epoch depending on if we are using empty images
     num_imgs = 0
     for train_key in train_datasets:
@@ -152,6 +149,16 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     
     # name output directory after model name
     cfg.OUTPUT_DIR = cfg.OUTPUT_DIR + "_" + model + "_" + schedule
+    
+    # on p3.16xlarge; 10% data w/ self-train num workers vs. ETA:
+    # 2: 1:05
+    # 4: 0:53
+    # 8: 0:51
+    # 16: 0:54
+    cfg.DATALOADER.NUM_WORKERS = 8
+    
+    # enable mixed precision training
+    cfg.SOLVER.AMP.ENABLED = True
     
     # run some default setup from Detectron2
     # note: this eliminates:
@@ -207,7 +214,7 @@ def register_self_train(data_dir, model_name):
         dataset = os.path.dirname(coco)
         
         try:
-            del DatasetCatalog._REGISTERED[dataset]
+            DatasetCatalog.remove(dataset)
         except KeyError:
             pass
         
@@ -298,6 +305,7 @@ def main(args):
     default_setup(cfg, {})
     
     trainer = get_coco_trainer(cfg, args.resume)
+    print("trainer._trainer",trainer._trainer)
         
     return trainer.train()
 

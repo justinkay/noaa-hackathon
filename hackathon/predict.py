@@ -22,6 +22,7 @@ from hackathon.data import register_image_dataset
 
 _MODELS = {
     "frcnn-10pct": "4k/output_frcnn-r101_1x_10pct",
+    "x152": "4k/output_x152_1x"
 }
 
 def get_model_for_eval(model_name, models_dir, score_threshold=0.05, nms_threshold=0.5, device="cuda"):

@@ -40,7 +40,7 @@ def register_dataset(dataset_name, data_dir="../data"):
     labels_path = os.path.join(data_dir, dataset["labels_loc"])
 
     try:
-        del DatasetCatalog._REGISTERED[dataset_name]
+        DatasetCatalog.remove(dataset_name)
     except KeyError:
         pass
     register_coco_instances(dataset_name, {}, labels_path, imgs_path)
@@ -53,7 +53,7 @@ def register_image_dataset(dataset_name, img_dir, img_extensions=[".jpg", ".png"
     For your own good, provide a height and width...
     """
     try:
-        del DatasetCatalog._REGISTERED[dataset_name]
+        DatasetCatalog.remove(dataset_name)
     except KeyError:
         pass
     DatasetCatalog.register(dataset_name, lambda: _get_simple_dataset_dicts(img_dir, img_extensions, height, width))
