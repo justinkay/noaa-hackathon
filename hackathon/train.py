@@ -162,7 +162,7 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     # with bs=4*gpus:
     # 8: 0:52
     # 16: 0:36 (!!)
-    cfg.DATALOADER.NUM_WORKERS = max(2, bs / 2)
+    cfg.DATALOADER.NUM_WORKERS = int(max(2, bs / 2))
     
     # run some default setup from Detectron2
     # note: this eliminates:
@@ -309,7 +309,6 @@ def main(args):
     default_setup(cfg, {})
     
     trainer = get_coco_trainer(cfg, args.resume)
-    print("trainer._trainer",trainer._trainer)
         
     return trainer.train()
 
