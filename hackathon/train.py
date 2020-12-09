@@ -31,6 +31,8 @@ _MODELS = {
                 "config": "/Retina-EfficientNet-b0-BiFPN.yaml" },
     "en-b4-bifpn": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b4_detectron2.pth",
                 "config": "/Retina-EfficientNet-b4-BiFPN.yaml" },
+    "en-b7-bifpn": { "weights": "/home/ubuntu/noaa-hackathon/models/pretrained/efficientnet_b7_detectron2.pth",
+                "config": "/Retina-EfficientNet-b7-BiFPN.yaml" },
     "x152": { "weights": "detectron2://Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv/18131413/model_0039999_e76410.pkl",
         "config": "/COCO-Detection/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml" }
 }
@@ -63,8 +65,13 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
 
     cfg = get_cfg()
     
-    # bs scaling based on num gpus
-    bs = num_gpus * 2
+    # enable mixed precision training
+    # note currently does not work on x152 due to deformable conv layers
+    if model is not "x152":
+        cfg.SOLVER.AMP.ENABLED = True
+        bs = num_gpus * 4
+    else:
+        bs = num_gpus * 2
     
     # lr scaling based on num gpus unless a custom lr is passed in
     if not lr:
@@ -109,8 +116,6 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     if self_train_model:
         self_train_datasets = register_self_train(data_dir, self_train_model)
         train_datasets = (*self_train_datasets, *train_datasets, )
-        print("==vvvvvvvvv==")
-        print(train_datasets)
         
     cfg.DATASETS.TRAIN = train_datasets
     cfg.DATASETS.TEST = val_datasets
@@ -132,7 +137,6 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
                 return False
             dataset_dicts = [x for x in dataset_dicts if valid(x["annotations"])]
             num_imgs += len(dataset_dicts)
-    print("Num images", num_imgs)
     
     epochs = _SCHEDULES[schedule]
     epoch_size = int(num_imgs / bs)
@@ -150,15 +154,15 @@ def get_training_config(data_dir, configs_dir, model="frcnn-r101", device="cuda"
     # name output directory after model name
     cfg.OUTPUT_DIR = cfg.OUTPUT_DIR + "_" + model + "_" + schedule
     
-    # on p3.16xlarge; 10% data w/ self-train num workers vs. ETA:
+    # on p3.16xlarge; 10% data w/ self-train num workers vs. ETA; bs=2*gpus:
     # 2: 1:05
     # 4: 0:53
     # 8: 0:51
     # 16: 0:54
-    cfg.DATALOADER.NUM_WORKERS = 8
-    
-    # enable mixed precision training
-    cfg.SOLVER.AMP.ENABLED = True
+    # with bs=4*gpus:
+    # 8: 0:52
+    # 16: 0:36 (!!)
+    cfg.DATALOADER.NUM_WORKERS = max(2, bs / 2)
     
     # run some default setup from Detectron2
     # note: this eliminates:
@@ -264,7 +268,7 @@ def training_argument_parser():
     parser = default_argument_parser()
 
     parser.add_argument("--model", default="frcnn-r101", 
-                        help="name of model to train, { 'frcnn-r101', 'frcnn-r50', 'retinanet-r50', 'retinanet-r101', 'context-rcnn-r101' }")
+                        help="name of model to train, see _MODELS")
     parser.add_argument("--data-dir", default="../data", metavar="FILE", help="path to data/")
     parser.add_argument("--configs-dir", default="../lib/detectron2/configs", metavar="FILE", help="path to detectron2/configs")
     parser.add_argument("--device", default="cuda", help="{ 'cuda', 'cpu' }")
