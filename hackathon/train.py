@@ -38,7 +38,7 @@ _MODELS = {
 }
 
 _SCHEDULES = {
-    "half": (6, 10, 12), # first stage cut in half
+    "0.5x":  (6, 8, 9),
     "1x": (12, 16, 18),
     "2x": (24, 32, 36),
     "4x": (48, 64, 72)
