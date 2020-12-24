@@ -5,7 +5,7 @@ This repository contains the object detection code for Ai.Fish + Lynker's NOAA G
 Our aim was to analyze a large quantity (~1.4tb) of unannotated bottomfish imagery collected by ROV from the US west coast. To this end our main objectives were:
 
 - collect as many expert annotations as possible the course of three days
-- compare the performance of several SOTA object detection models on subsets of this labeled data, to get an idea of how these models perform in very low-data regimes
+- compare the performance of several common object detection models on subsets of this labeled data, to get an idea of how these models perform in very low-data regimes
 - investigate the use of self-training for object detection on the large unlabelled dataset
 - build an active learning system for classification of bounding box outputs from the object detector
 
