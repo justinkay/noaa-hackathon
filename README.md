@@ -52,7 +52,7 @@ conda activate noaa
 python -m ipykernel install --user --name noaa
 ```
 
-Install submodules:
+Install submodules (Optional; allows use of EfficientNet backbones which were not included in results):
 ```
 git submodule update --init
 cd lib/detectron2_backbone
